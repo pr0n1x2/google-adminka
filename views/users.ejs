@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+
+    <link rel="stylesheet" type="text/css" href="/stylesheets/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="/stylesheets/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="/stylesheets/local.css" />
+</head>
+<body>
+<div id="wrapper">
+    <%- include('nav'); -%>
+    <div id="page-wrapper">
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">All Users</h1>
+            </div>
+        </div>
+        <div class="row">
+            <form action="" method="get" role="form">
+                <div class="col-lg-3">
+                    <select class="form-control" name="countryId">
+                        <option value="">Сhoose country</option>
+                        <% countries.forEach(function(country) { %>
+                            <% if (countryId === country.id) { %>
+                                <option value="<%= country.id %>" selected><%= country.name %></option>
+                            <% } else { %>
+                                <option value="<%= country.id %>"><%= country.name %></option>
+                            <% } %>
+                        <% }); %>
+                    </select>
+                </div>
+                <div class="col-lg-9">
+                    <button type="submit" class="btn btn-primary">Find Users</button>
+                </div>
+            </form>
+        </div>
+        <hr/>
+        <div class="row">
+            <div class="col-lg-12">
+                <table class="table table-bordered table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Full Name</th>
+                            <th scope="col">E-mail Address</th>
+                            <th scope="col">Phone</th>
+                            <th scope="col">Birthday</th>
+                            <th scope="col">Age</th>
+                            <th scope="col">Country</th>
+                            <th scope="col">Register Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (users.length) { %>
+                            <% users.forEach(function(user) { %>
+                                <tr>
+                                    <th scope="row"><%= counter++ %></th>
+                                    <td><%= user.person.name %></td>
+                                    <td><%= user.person.email %></td>
+                                    <td><%= user.person.phone %></td>
+                                    <% if (user.person.birthday) { %>
+                                        <td><%= user.getBirthday() %></td>
+                                        <td><%= user.age %></td>
+                                    <% } else { %>
+                                        <td>not specified</td>
+                                        <td>not specified</td>
+                                    <% } %>
+                                    <% if (user.person.country) { %>
+                                        <td><%= user.person.country.name %></td>
+                                    <% } else { %>
+                                        <td>not specified</td>
+                                    <% } %>
+                                    <td><%= user.getRegisteredDate() %></td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="8" class="text-center text-danger">No users found</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/javascripts/menu.js"></script>
+</body>
+</html>

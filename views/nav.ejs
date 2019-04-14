@@ -1,0 +1,22 @@
+<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="navbar-header">
+        <a class="navbar-brand" href="/home">Admin Panel</a>
+    </div>
+    <div class="collapse navbar-collapse navbar-ex1-collapse">
+        <ul class="nav navbar-nav side-nav">
+            <li data-url="/home"><a href="/home"><i class="fa fa-bullseye"></i> Dashboard</a></li>
+            <li data-url="/places"><a href="/places"><i class="fa fa-globe"></i> Google Places</a></li>
+            <li data-url="/profile"><a href="/profile"><i class="fa fa-user"></i> Edit My Profile</a></li>
+            <li data-url="/password"><a href="/password"><i class="fa fa-user-secret"></i> Edit My Password</a></li>
+            <% if (user.role === 'admin') { %>
+                <li data-url="/users"><a href="/users"><i class="fa fa-list-ul"></i> Other Users</a></li>
+            <% } %>
+            <li data-url="/logout"><a href="/logout"><i class="fa fa-lock"></i> Logout</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right navbar-user">
+            <li>
+                <a href="/profile"><i class="fa fa-user"></i> <%= user.fullName %></a>
+            </li>
+        </ul>
+    </div>
+</nav>

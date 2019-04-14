@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+
+    <link rel="stylesheet" type="text/css" href="/stylesheets/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="/stylesheets/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="/stylesheets/local.css" />
+</head>
+<body class="bg-auth">
+<div id="page-wrapper">
+    <div class="row">
+        <div class="col-lg-4"></div>
+        <div class="col-lg-4">
+            <div class="bg-auth-panel">
+                <div class="panel-body">
+                    <h2 class="text-primary">Register Page</h2>
+                    <hr/>
+                    <% if (error) { %>
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="alert alert-danger">
+                                <strong>Error!</strong> <%= error %>
+                            </div>
+                        </div>
+                    </div>
+                    <% } %>
+                    <form action="" method="post" role="form">
+                        <div class="form-group">
+                            <label>Name <span class="text-danger">*</span></label>
+                            <input class="form-control" type="text" name="name" value="<%= data.name %>" maxlength="40" placeholder="Enter your first name">
+                        </div>
+                        <div class="form-group">
+                            <label>Surname <span class="text-danger">*</span></label>
+                            <input class="form-control" type="text" name="surname" value="<%= data.surname %>" maxlength="40" placeholder="Enter your last name">
+                        </div>
+                        <div class="form-group">
+                            <label>E-mail <span class="text-danger">*</span></label>
+                            <input class="form-control" type="text" name="email" value="<%= data.email %>" maxlength="200" placeholder="Enter your primary E-mail address">
+                        </div>
+                        <div class="form-group">
+                            <label>Country</label>
+                            <select class="form-control" name="countryId">
+                                <option value="">Choose a country of which you are a citizen</option>
+                                <% countries.forEach(function(country) { %>
+                                    <% if (data.countryId === country.id) { %>
+                                        <option value="<%= country.id %>" selected><%= country.name %></option>
+                                    <% } else { %>
+                                        <option value="<%= country.id %>"><%= country.name %></option>
+                                    <% } %>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone <span class="text-danger">*</span></label>
+                            <input class="form-control" type="text" name="phone" value="<%= data.phone %>" maxlength="15" placeholder="Enter your cell phone number, format: (XXX) XXX-XX-XX">
+                        </div>
+                        <div class="form-group">
+                            <label>Birthday</label>
+                            <input class="form-control" type="text" name="birthday" value="<%= data.birthday %>" maxlength="10" placeholder="Enter your date of birth, format: YYYY-MM-DD">
+                        </div>
+                        <div class="form-group">
+                            <label>Password <span class="text-danger">*</span></label>
+                            <input class="form-control" type="password" name="password" value="" maxlength="30" placeholder="Your password. Minimum 6 characters.">
+                        </div>
+                        <div class="form-group">
+                            <label>Retype password <span class="text-danger">*</span></label>
+                            <input class="form-control" type="password" name="passwordRetype" value="" maxlength="30" placeholder="Retype password">
+                        </div>
+                        <hr/>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-success">Register</button>
+                            <a href="/login" class="btn btn-default">Go To Login Page</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4"></div>
+    </div>
+</div>
+</body>
+</html>

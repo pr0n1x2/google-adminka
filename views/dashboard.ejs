@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+
+    <link rel="stylesheet" type="text/css" href="/stylesheets/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="/stylesheets/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="/stylesheets/local.css" />
+</head>
+<body>
+<div id="wrapper">
+    <%- include('nav'); -%>
+    <div id="page-wrapper">
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">Dashboard</h1>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <p class="lead">
+                    We welcome you <span class="text-primary"><%= user.fullName %></span>,
+                    you are with us from <%= user.getRegisteredDate() %>
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <h3 class="page-header">Information About You</h3>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-2">
+                <p>Your name:</p>
+            </div>
+            <div class="col-lg-10">
+                <p><%= user.person.name %></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-2">
+                <p>Your surname:</p>
+            </div>
+            <div class="col-lg-10">
+                <p><%= user.person.surname %></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-2">
+                <p>Your E-mail address:</p>
+            </div>
+            <div class="col-lg-10">
+                <p><%= user.person.email %></p>
+            </div>
+        </div>
+        <% if (typeof(user.person.country) !== 'undefined') { %>
+        <div class="row">
+            <div class="col-lg-2">
+                <p>Your country:</p>
+            </div>
+            <div class="col-lg-10">
+                <p><%= user.person.country.name %></p>
+            </div>
+        </div>
+        <% } %>
+        <div class="row">
+            <div class="col-lg-2">
+                <p>Your birthday:</p>
+            </div>
+            <div class="col-lg-10">
+                <p><%= user.getBirthday() %></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-2">
+                <p>Your age:</p>
+            </div>
+            <div class="col-lg-10">
+                <p><%= user.age %></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-2">
+                <p>Your phone:</p>
+            </div>
+            <div class="col-lg-10">
+                <p><%= user.person.phone %></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-2">
+                <p>Your address:</p>
+            </div>
+            <div class="col-lg-10">
+                <p></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-2">
+                <p>About you:</p>
+            </div>
+            <div class="col-lg-10">
+                <p><%= user.person.aboutMe %></p>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/javascripts/menu.js"></script>
+</body>
+</html>

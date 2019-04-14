@@ -1,0 +1,26 @@
+{
+  "name": "express-es6",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "cross-env NODE_PATH=. node ./bin/www"
+  },
+  "dependencies": {
+    "@google/maps": "^0.5.5",
+    "ajv": "^6.10.0",
+    "bcrypt": "^3.0.5",
+    "cookie-parser": "~1.4.3",
+    "cross-env": "^5.2.0",
+    "debug": "~2.6.9",
+    "ejs": "~2.5.7",
+    "express": "~4.16.0",
+    "express-session": "^1.16.1",
+    "fs-extra": "^7.0.1",
+    "http-errors": "~1.6.2",
+    "logger": "0.0.1",
+    "mongoose": "^5.5.1",
+    "morgan": "~1.9.0",
+    "nconf": "^0.10.0",
+    "url-parse": "^1.4.6"
+  }
+}
