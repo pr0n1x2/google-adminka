@@ -24,7 +24,7 @@
             </div>
             <div class="col-lg-5">
                 <button type="button" class="btn btn-primary">Find Places</button>
-                <img src="images/ajax-loader.gif" class="ajax-loader " alt="Ajax loader" border="0">
+                <img src="/images/ajax-loader.gif" class="ajax-loader " alt="Ajax loader" border="0">
             </div>
         </div>
         <div class="row places-success ">
@@ -37,7 +37,7 @@
         <div class="row places-errors ">
             <div class="col-lg-7">
                 <div class="alert alert-danger">
-                    <strong>Error!</strong> Change a few things up and try submitting again.
+                    <strong>Error!</strong> <span class="message"> Change a few things up and try submitting again. </span>
                 </div>
             </div>
         </div>
@@ -54,5 +54,7 @@
     </div>
 </div>
 <script src="/javascripts/menu.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="/javascripts/places.js"></script>
 </body>
 </html>

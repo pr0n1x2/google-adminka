@@ -10,6 +10,9 @@ const Ajv = require('ajv');
 // Подключаем модуль bcrypt для хеширования паролей
 const bcrypt = require('bcrypt');
 
+// Подключаем модуль url-parse
+const urlParse = require('url-parse');
+
 // Подключаем модуль config
 const config = require('config');
 
@@ -184,7 +187,7 @@ const loginAction = async (req, res, next) => {
         // Проверяем, если пользователь нажал галочку Remember Me
         if (remember !== undefined) {
             // Генерируем случайную строку на основе текущей даты
-            const randomStr = await await bcrypt.hash((new Date()).toString(), 10);
+            const randomStr = await bcrypt.hash((new Date()).toString(), 10);
 
             // Получаем из конфига настройки для token
             const tokenCookieName = config.get('token:name');
@@ -195,17 +198,126 @@ const loginAction = async (req, res, next) => {
             user.token = randomStr;
             await user.save();
 
-            // Создаем cookie
-            res.cookie(tokenCookieName, randomStr, { maxAge: tokenCookieAge, sameSite: true, secure: tokenCookieSecure });
+            // Создаем cookie c именем из константы tokenCookieName
+            // Источник: https://expressjs.com/en/api.html#res.cookie
+            res.cookie(tokenCookieName, randomStr, { maxAge: tokenCookieAge, sameSite: true, httpOnly: true, secure: tokenCookieSecure });
         }
 
         // Если же пароли совпадают, тогда создаем сессию и перенаправляем на страницу /home
         req.session.userId = user.id;
 
-        return res.redirect('/home');
+        res.redirect('/home');
     } catch (error) {
-        return res.render('login', { title: 'Register page', data: loginObj, error: error.message });
+        res.render('login', { title: 'Register page', data: loginObj, error: error.message });
     }
+};
+
+// Эта асинхронная middleware функция будет вызываться всякий
+// раз, когда нам нужно проверить если ли у пользователя в Cookies
+// значение token, которое появляется у него, когда он нажал на
+// галочку Remember Me на форме авторизации
+const checkTokenInUserCookies = async (req, res, next) => {
+    // Проверяем, что если уже существует сессия с Id пользователя,
+    // тогда дальнейшую проверку для token нам не нужно делать и мы
+    // переходим к следующей middleware функции
+    if (req.session.userId) {
+        return next();
+    }
+
+    // Получаем значение token из объекта Cookies
+    const token = req.cookies[config.get('token:name')];
+
+    // Если значение token существует
+    if (token) {
+        // Ищем в базе данных пользователя с таким token, который мы получили из Cookies
+        // и говорим, чтобы база объединила документ User и документ Country
+        // в один объект User.
+        // Другими словами, присоединила к документу User домумент Country
+        // Источник: https://mongoosejs.com/docs/populate.html
+        const user = await User.findOne({token: token}).populate('person.country');
+
+        if (user) {
+            // Если в базе данных такой польователь существует,
+            // тогда в сессию записываем его идентификатор, а в
+            // res.locals записывает текущий объект User
+            // переходим к следующему middleware
+            req.session.userId = user.id;
+            res.locals.user = user;
+        }
+    }
+
+    next();
+};
+
+// Эта middleware функция будет вызываться всякий
+// раз, когда нам нужно проверить на какою страницу перешел
+// пользователь и проверить авторизирован ли он для страниц,
+// которые могут просматривать только авторизированные пользователи
+const allowUserToPage = (req, res, next) => {
+    // В этом массиве мы храним URL по которым пользователи могут ходить НЕ авторизированными
+    const notAuthPage = ['/login', '/register'];
+
+    // Парсим url на котором мы сейчас находимся
+    // Нам нужно получить значение pathname, чтобы сравнить его со значением
+    // из массива notAuthPage
+    // Источник: https://www.npmjs.com/package/url-parse
+    const url = urlParse(req.url, true);
+
+    // Проверяем если пользователь НЕ авторизирован
+    if (!req.session.userId) {
+        // Проверяем зашел ли пользователь на страницу, которая доступна только для авторизированных пользователей
+        // Источник: https://learn.javascript.ru/array-methods#indexof-lastindexof
+        if (notAuthPage.indexOf(url.pathname) === -1) {
+            return res.redirect('/login');
+        }
+    } else {
+        // Если же пользователь уже авторизирован
+        // Проверяем зашел ли пользователь на страницу, которая доступна только для НЕ авторизированных пользователей
+        if (notAuthPage.indexOf(req.url) !== -1) {
+            return res.redirect('/home');
+        }
+    }
+
+    next();
+};
+
+// Эта асинхронная middleware функция будет вызываться всякий
+// раз, когда нам нужно получить документ User текущего пользователя
+// из БД и сохранить его в res.locals
+const getUserFromDatabaseBySessionUserId =  async (req, res, next) => {
+    // Првоеряем, что в res.locals у нас есть уже пользователь
+    // Если он существует, тогда переходим к следующей middleware функции
+    // Ранее это значение мы могли установить в checkTokenInUserCookies
+    if (res.locals.user) {
+        return next();
+    }
+
+    // Берем значение userId из сессии
+    const {userId} = req.session;
+
+    // Если userId существует, тогда вытягиваем его из базы и сохраняем в res.locals
+    if (userId) {
+        // Ищем в базе данных пользователя с таким userId, который мы получили из Sessions
+        // и говорим, чтобы база объединила документ User и документ Country
+        // в один объект User.
+        // Другими словами, присоединила к документу User домумент Country
+        // Источник: https://mongoosejs.com/docs/populate.html
+        const user = await User.findById(userId).populate('person.country');
+
+        if (user) {
+            // Если в базе данных такой польователь существует,
+            // тогда в res.locals записывает текущий документ User и
+            // переходим к следующему middleware
+            res.locals.user = user;
+        } else {
+            // Если по какой-то причине в БД не был найден пользователь с таким userId,
+            // тогда редиректим пользователя на страницу /logout, чтобы удалить сессию
+            // и очистить все Cookies
+            return res.redirect('/logout');
+        }
+    }
+
+    next();
 };
 
 // Эта middleware функция будет вызываться всякий
@@ -240,5 +352,8 @@ module.exports.registerView = registerView;
 module.exports.registerAction = registerAction;
 module.exports.loginView = loginView;
 module.exports.loginAction = loginAction;
+module.exports.checkTokenInUserCookies = checkTokenInUserCookies;
+module.exports.allowUserToPage = allowUserToPage;
+module.exports.getUserFromDatabaseBySessionUserId = getUserFromDatabaseBySessionUserId;
 module.exports.onlyAdmin = onlyAdmin;
 module.exports.logout = logout;

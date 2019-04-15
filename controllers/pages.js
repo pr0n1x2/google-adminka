@@ -136,16 +136,16 @@ const profileAction = async (req, res, next) => {
 };
 
 // Эта асинхронная middleware функция будет вызываться, когда
-// пользователь запросил страницу /profile методом GET
+// пользователь запросил страницу /users методом GET
 const userView = async (req, res, next) => {
     // Получаем данные из формы, которые пришли методом GET
     const { countryId } = req.query;
 
-    const whereCoutry = !countryId ? {} : {'person.country': countryId};
+    const whereCountry = !countryId ? {} : {'person.country': countryId};
 
     // Выбираем из базы даннах всех пользователей, объединяем пользователей с коллекцией
     // Country и сортируем пользователей по полю createdAt
-    const users = await User.find(whereCoutry).populate('person.country').sort({'person.createdAt': -1});
+    const users = await User.find(whereCountry).populate('person.country').sort({'createdAt': -1});
 
     // Указываем, что мы хотим получить все значения из базы данных из коллекции
     // Country и чтобы они были отсортированы по полю name по возрастанию

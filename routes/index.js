@@ -17,6 +17,7 @@ router.get('/register', authController.registerView);
 router.post('/register', authController.registerAction);
 
 router.get('/places', placesController.placesView);
+router.post('/getPlacesFromGoogle', placesController.getAddressesFromGooglePlaces);
 
 router.get('/profile', pagesController.profileView);
 router.post('/profile', pagesController.profileAction);
