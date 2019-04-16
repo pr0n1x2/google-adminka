@@ -19,8 +19,7 @@ const userSchema = new Schema({
         enum: ['admin', 'user'],    // Указываем, что в этом поле могут храниться только 2 значение admin или user
         default: 'user'             // Указываем, что по умолчанию будет вставляться значение user
     },
-    // Случайная строка, в которой будет храниться токен пользователя, еслион нажал галочку Remember Me
-    token: {
+    lastSessionId: {
         type: String,
         required: false
     }

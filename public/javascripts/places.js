@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // мы кликнули, в нашем случае это будет один из элементов LI
         // Источник: https://developer.mozilla.org/en-US/docs/Web/API/Event/target
         const selectedLi = event.target;
-        // В констенту placeId мы помещаем идентификатор адреса, который был получен
+        // В константу placeId мы помещаем идентификатор адреса, который был получен
         // от сервера, этот идентификатор находится в атрибуте data-place, который мы
         // создали в строке 68 (этого файла, функция showAddressesFromServer)
         const placeId = selectedLi.dataset.place;

@@ -4,6 +4,9 @@ const Country = require('models/country');
 // Подключаем модель User
 const User = require('models/user');
 
+// Подключаем модель Token
+const Token = require('models/token');
+
 // Подключаем модуль ajv
 const Ajv = require('ajv');
 
@@ -184,32 +187,52 @@ const loginAction = async (req, res, next) => {
             throw new Error('Wrong password');
         }
 
-        // Проверяем, если пользователь нажал галочку Remember Me
-        if (remember !== undefined) {
-            // Генерируем случайную строку на основе текущей даты
-            const randomStr = await bcrypt.hash((new Date()).toString(), 10);
-
-            // Получаем из конфига настройки для token
-            const tokenCookieName = config.get('token:name');
-            const tokenCookieAge = config.get('token:lifetime');
-            const tokenCookieSecure = config.get('token:in_prod');
-
-            // Сохраняем token в базу данных текущего пользователя
-            user.token = randomStr;
-            await user.save();
-
-            // Создаем cookie c именем из константы tokenCookieName
-            // Источник: https://expressjs.com/en/api.html#res.cookie
-            res.cookie(tokenCookieName, randomStr, { maxAge: tokenCookieAge, sameSite: true, httpOnly: true, secure: tokenCookieSecure });
-        }
-
         // Если же пароли совпадают, тогда создаем сессию и перенаправляем на страницу /home
         req.session.userId = user.id;
+
+        user.lastSessionId = req.sessionID;
+        await user.save();
+
+        // Проверяем, если пользователь нажал галочку Remember Me
+        if (remember !== undefined) {
+            await generateNewToken(res, user.id);
+        }
 
         res.redirect('/home');
     } catch (error) {
         res.render('login', { title: 'Register page', data: loginObj, error: error.message });
     }
+};
+
+const generateNewToken = async (res, userId, oldToken = false) => {
+    const secret = await bcrypt.hash((new Date()).toString(), 10);
+    let token;
+
+    if (oldToken) {
+        token = oldToken.token;
+        oldToken.remove();
+    } else {
+        token = await bcrypt.hash((new Date()).toString(), 10);
+    }
+
+    // Получаем из конфига настройки для token
+    const tokenCookieName = config.get('token:tokenName');
+    const secretCookieName = config.get('token:secretName');
+    const tokenCookieAge = config.get('token:lifetime');
+    const tokenCookieSecure = config.get('token:in_prod');
+
+    const newToken = new Token({
+        token: token,
+        secret: secret,
+        userId: userId
+    });
+
+    await newToken.save();
+
+    // Создаем cookie c именем из константы tokenCookieName
+    // Источник: https://expressjs.com/en/api.html#res.cookie
+    res.cookie(tokenCookieName, token, { maxAge: tokenCookieAge, sameSite: true, httpOnly: true, secure: tokenCookieSecure });
+    res.cookie(secretCookieName, secret, { maxAge: tokenCookieAge, sameSite: true, httpOnly: true, secure: tokenCookieSecure });
 };
 
 // Эта асинхронная middleware функция будет вызываться всякий
@@ -225,10 +248,12 @@ const checkTokenInUserCookies = async (req, res, next) => {
     }
 
     // Получаем значение token из объекта Cookies
-    const token = req.cookies[config.get('token:name')];
+    const token = req.cookies[config.get('token:tokenName')];
+    // Получаем значение secret из объекта Cookies
+    const secret = req.cookies[config.get('token:secretName')];
 
     // Если значение token существует
-    if (token) {
+    /*if (token) {
         // Ищем в базе данных пользователя с таким token, который мы получили из Cookies
         // и говорим, чтобы база объединила документ User и документ Country
         // в один объект User.
@@ -243,6 +268,19 @@ const checkTokenInUserCookies = async (req, res, next) => {
             // переходим к следующему middleware
             req.session.userId = user.id;
             res.locals.user = user;
+        }
+    }*/
+
+    if (token && secret) {
+        const tokenFromBase = await Token.findOne({token: token});
+
+        if (tokenFromBase) {
+            if (secret === tokenFromBase.secret) {
+                await generateNewToken(res, tokenFromBase.userId, tokenFromBase);
+                req.session.userId = tokenFromBase.userId;
+            } else {
+                const user = await User.findById(tokenFromBase.userId);
+            }
         }
     }
 
@@ -343,7 +381,8 @@ const logout = (req, res, next) => {
         }
 
         res.clearCookie(config.get('session:name'));
-        res.clearCookie(config.get('token:name'));
+        res.clearCookie(config.get('token:tokenName'));
+        res.clearCookie(config.get('token:secretName'));
         res.redirect('/login');
     });
 };
