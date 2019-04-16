@@ -31,6 +31,10 @@ body {
     display: none;
 }
 
+.places-errors .alert, .places-success .alert {
+    margin-bottom: 0;
+}
+
 .places-errors-visible, .places-success-visible {
     display: block;
     margin-top: 20px;

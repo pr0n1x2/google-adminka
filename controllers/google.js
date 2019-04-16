@@ -1,9 +1,18 @@
+// Подключаем можель config
 const config = require('config');
+
+// Подключаем модуль @google/maps для работы с Google Maps API
+// Источник: https://www.npmjs.com/package/@google/maps
 const MapsClient = require('@google/maps');
 
 const SESSION_TOKEN = 'randomstr';
+
+// В этой переменной будет храниться сам объект @google/maps,
+// который и будет подключаться к Google API и получать от него данные
 let googleMapsClient = null;
 
+// Функция которая инициализирует объект
+// Эту функцию вызывает runner, файл bin/runners/google.js
 const init = () => {
     if (!googleMapsClient) {
         googleMapsClient = MapsClient.createClient({
@@ -15,28 +24,65 @@ const init = () => {
     return googleMapsClient;
 };
 
-const placesAutoComplete = (input) => {
-    return googleMapsClient.placesAutoComplete({
-        input: input,
-        sessiontoken: SESSION_TOKEN, // Не знаю, что сюда передавать!!!
-        language: 'uk',
-    }).asPromise();
+// Эту асинхронную функцию нужно вызывать, чтобы Google API вернул
+// массив адресов по которым он нашел совпадения.
+// В качестве параметра нужно передавать адрес, который пользователь
+// ввел на сайте.
+// Функция либо возвращает ответ от Google API либо выбрасывает
+// исключение если произошла какае-то ошибка.
+const placesAutoComplete = async (input) => {
+    try {
+        const response = await googleMapsClient.placesAutoComplete({
+            input: input,
+            sessiontoken: SESSION_TOKEN, // Не знаю, что сюда передавать!!!
+            language: 'uk',
+        }).asPromise();
+
+        return response;
+    } catch (error) {
+        throw new Error(getErrorByStatusCode(error.json.status));
+    }
 };
 
-const placeDetails = (placeId) => {
-    return googleMapsClient.place({
-        placeid: placeId,
-        language: 'uk',
-    }).asPromise();
+// Эту асинхронную функцию нужно вызывать, чтобы Google API вернул
+// подробный отчет о адресе, который мы у него запросим.
+// В качестве параметра нужно передавать идентификатор адреса, а именно place_id
+// Функция либо возвращает ответ от Google API либо выбрасывает
+// исключение если произошла какае-то ошибка.
+const placeDetails = async (placeId) => {
+    try {
+        const response = await googleMapsClient.place({
+            placeid: placeId,
+            language: 'uk',
+        }).asPromise();
+
+        return response;
+    } catch (error) {
+        throw new Error(getErrorByStatusCode(error.json.status));
+    }
 };
 
-const placesPhoto = (photoreference) => {
-    return googleMapsClient.placesPhoto({
-        photoreference: photoreference,
-        maxwidth: 500,
-    }).asPromise();
+// Эту асинхронную функцию нужно вызывать, чтобы Google API вернул
+// подробный отчет о фотографии, которую мы у него запросим.
+// В качестве параметра нужно передавать идентификатор фотографии, а именно photoreference
+// Функция либо возвращает ответ от Google API либо выбрасывает
+// исключение если произошла какае-то ошибка.
+const placesPhoto = async (photoreference) => {
+    try {
+        const response = await googleMapsClient.placesPhoto({
+            photoreference: photoreference,
+            maxwidth: 500,
+        }).asPromise();
+
+        return response;
+    } catch (error) {
+        throw new Error(getErrorByStatusCode(error.json.status));
+    }
 };
 
+// Функция, которая анализирует ответ от Google API на наличие ошибки
+// и пытается оперелить, какую именно ошибку вернул Google API.
+// Возвращает текст ошибки
 const getErrorByStatusCode = (code) => {
     let message;
 
@@ -65,4 +111,3 @@ module.exports.init = init;
 module.exports.placesAutoComplete = placesAutoComplete;
 module.exports.placeDetails = placeDetails;
 module.exports.placesPhoto = placesPhoto;
-module.exports.getErrorByStatusCode = getErrorByStatusCode;

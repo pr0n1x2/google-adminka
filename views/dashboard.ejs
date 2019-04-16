@@ -56,31 +56,33 @@
             </div>
         </div>
         <% if (typeof(user.person.country) !== 'undefined') { %>
-        <div class="row">
-            <div class="col-lg-2">
-                <p>Your country:</p>
+            <div class="row">
+                <div class="col-lg-2">
+                    <p>Your country:</p>
+                </div>
+                <div class="col-lg-10">
+                    <p><%= user.person.country.name %></p>
+                </div>
             </div>
-            <div class="col-lg-10">
-                <p><%= user.person.country.name %></p>
-            </div>
-        </div>
         <% } %>
-        <div class="row">
-            <div class="col-lg-2">
-                <p>Your birthday:</p>
+        <% if (user.person.birthday) { %>
+            <div class="row">
+                <div class="col-lg-2">
+                    <p>Your birthday:</p>
+                </div>
+                <div class="col-lg-10">
+                    <p><%= user.getBirthday() %></p>
+                </div>
             </div>
-            <div class="col-lg-10">
-                <p><%= user.getBirthday() %></p>
+            <div class="row">
+                <div class="col-lg-2">
+                    <p>Your age:</p>
+                </div>
+                <div class="col-lg-10">
+                    <p><%= user.age %></p>
+                </div>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-lg-2">
-                <p>Your age:</p>
-            </div>
-            <div class="col-lg-10">
-                <p><%= user.age %></p>
-            </div>
-        </div>
+        <% } %>
         <div class="row">
             <div class="col-lg-2">
                 <p>Your phone:</p>
@@ -89,22 +91,26 @@
                 <p><%= user.person.phone %></p>
             </div>
         </div>
-        <div class="row">
-            <div class="col-lg-2">
-                <p>Your address:</p>
+        <% if (typeof(user.person.address) !== 'undefined') { %>
+            <div class="row">
+                <div class="col-lg-2">
+                    <p>Your address:</p>
+                </div>
+                <div class="col-lg-10">
+                    <p><%= user.person.address %></p>
+                </div>
             </div>
-            <div class="col-lg-10">
-                <p></p>
+        <% } %>
+        <% if (user.person.aboutMe) { %>
+            <div class="row">
+                <div class="col-lg-2">
+                    <p>About you:</p>
+                </div>
+                <div class="col-lg-10">
+                    <p><%= user.person.aboutMe %></p>
+                </div>
             </div>
-        </div>
-        <div class="row">
-            <div class="col-lg-2">
-                <p>About you:</p>
-            </div>
-            <div class="col-lg-10">
-                <p><%= user.person.aboutMe %></p>
-            </div>
-        </div>
+        <% } %>
     </div>
 </div>
 <script src="/javascripts/menu.js"></script>
