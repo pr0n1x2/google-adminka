@@ -19,9 +19,16 @@ const userSchema = new Schema({
         enum: ['admin', 'user'],    // Указываем, что в этом поле могут храниться только 2 значение admin или user
         default: 'user'             // Указываем, что по умолчанию будет вставляться значение user
     },
+    // Храним последний идентификатор сессии, которая присвоилась пользователю
     lastSessionId: {
         type: String,
         required: false
+    },
+    // Специальная метка указывающая, что акаунт был взломан через Cookies token
+    isCookiesHacked: {
+        type: Boolean,              // Указываем тип поля Булевский тип
+        required: false,
+        default: false
     }
 }, {
     // Временные метки

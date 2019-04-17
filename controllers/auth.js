@@ -1,3 +1,5 @@
+const createError = require('http-errors');
+
 // Подключаем модель Country
 const Country = require('models/country');
 
@@ -178,6 +180,13 @@ const loginAction = async (req, res, next) => {
             throw new Error('User with such E-mail was not found');
         }
 
+        // Проверяем статус поля, которое отвечает за то, что аккаунт был взломан через Cookies
+        // Если значение поля установлено в true, тогда показываем пользователю страницу
+        // на которой предупрежлаем, что его аккаунт взломан и говорим, что ему делать дальше.
+        if (user.isCookiesHacked) {
+            return res.render('hacked', { title: 'Your account has been hacked' });
+        }
+
         // Сравниваем пароли, тот который ввел пользователь и тот который храниться в базе данных
         // Модуль bcrypt возвращает true или false
         const comparePassword = await bcrypt.compare(password, user.person.password);
@@ -187,7 +196,7 @@ const loginAction = async (req, res, next) => {
             throw new Error('Wrong password');
         }
 
-        // Если же пароли совпадают, тогда создаем сессию и перенаправляем на страницу /home
+        // Если же пароли совпадают, тогда создаем сессию
         req.session.userId = user.id;
 
         user.lastSessionId = req.sessionID;
@@ -198,6 +207,7 @@ const loginAction = async (req, res, next) => {
             await generateNewToken(res, user.id);
         }
 
+        // Перенаправляем на главную страницу /home
         res.redirect('/home');
     } catch (error) {
         res.render('login', { title: 'Register page', data: loginObj, error: error.message });
@@ -205,15 +215,8 @@ const loginAction = async (req, res, next) => {
 };
 
 const generateNewToken = async (res, userId, oldToken = false) => {
-    const secret = await bcrypt.hash((new Date()).toString(), 10);
     let token;
-
-    if (oldToken) {
-        token = oldToken.token;
-        oldToken.remove();
-    } else {
-        token = await bcrypt.hash((new Date()).toString(), 10);
-    }
+    const secret = await bcrypt.hash((new Date()).toString(), 10);
 
     // Получаем из конфига настройки для token
     const tokenCookieName = config.get('token:tokenName');
@@ -221,15 +224,25 @@ const generateNewToken = async (res, userId, oldToken = false) => {
     const tokenCookieAge = config.get('token:lifetime');
     const tokenCookieSecure = config.get('token:in_prod');
 
-    const newToken = new Token({
-        token: token,
-        secret: secret,
-        userId: userId
-    });
+    if (!oldToken) {
+        token = await bcrypt.hash((new Date()).toString(), 10);
 
-    await newToken.save();
+        const newToken = new Token({
+            token: token,
+            secret: secret,
+            userId: userId
+        });
+
+        await newToken.save();
+    } else {
+        oldToken.secret = secret;
+        await oldToken.save();
+
+        token = oldToken.token;
+    }
 
     // Создаем cookie c именем из константы tokenCookieName
+    // Создаем cookie c именем из константы secretCookieName
     // Источник: https://expressjs.com/en/api.html#res.cookie
     res.cookie(tokenCookieName, token, { maxAge: tokenCookieAge, sameSite: true, httpOnly: true, secure: tokenCookieSecure });
     res.cookie(secretCookieName, secret, { maxAge: tokenCookieAge, sameSite: true, httpOnly: true, secure: tokenCookieSecure });
@@ -252,40 +265,41 @@ const checkTokenInUserCookies = async (req, res, next) => {
     // Получаем значение secret из объекта Cookies
     const secret = req.cookies[config.get('token:secretName')];
 
-    // Если значение token существует
-    /*if (token) {
-        // Ищем в базе данных пользователя с таким token, который мы получили из Cookies
-        // и говорим, чтобы база объединила документ User и документ Country
-        // в один объект User.
-        // Другими словами, присоединила к документу User домумент Country
-        // Источник: https://mongoosejs.com/docs/populate.html
-        const user = await User.findOne({token: token}).populate('person.country');
-
-        if (user) {
-            // Если в базе данных такой польователь существует,
-            // тогда в сессию записываем его идентификатор, а в
-            // res.locals записывает текущий объект User
-            // переходим к следующему middleware
-            req.session.userId = user.id;
-            res.locals.user = user;
-        }
-    }*/
-
     if (token && secret) {
-        const tokenFromBase = await Token.findOne({token: token});
+        try {
+            const tokenFromBase = await Token.findOne({token: token});
 
-        if (tokenFromBase) {
-            if (secret === tokenFromBase.secret) {
-                await generateNewToken(res, tokenFromBase.userId, tokenFromBase);
-                req.session.userId = tokenFromBase.userId;
-            } else {
-                const user = await User.findById(tokenFromBase.userId);
+            if (tokenFromBase) {
+                if (secret === tokenFromBase.secret) {
+                    await generateNewToken(res, null, tokenFromBase);
+                    req.session.userId = tokenFromBase.userId;
+                    await User.updateOne({_id: tokenFromBase.userId}, {lastSessionId: req.sessionID});
+                } else {
+                    const user = await User.findById(tokenFromBase.userId);
+
+                    req.sessionStore.destroy(user.lastSessionId, async (err, sess) => {
+                        await Token.deleteMany({userId: user.id});
+                        user.isCookiesHacked = true;
+                        await user.save();
+
+                        // res.render('hacked', { title: 'Your account has been hacked' });
+                        return next(showHackedMessage);
+                    });
+
+                    return;
+                }
             }
+        } catch (error) {
+            return next(createError(500));
         }
     }
 
     next();
 };
+
+const showHackedMessage = (req, res, next) => {
+    res.render('hacked', { title: 'Your account has been hacked' });
+}
 
 // Эта middleware функция будет вызываться всякий
 // раз, когда нам нужно проверить на какою страницу перешел
@@ -375,11 +389,12 @@ const onlyAdmin = (req, res, next) => {
 // Эта middleware функция будет вызываться, когда
 // пользователь запросил страницу /logout методом GET
 const logout = (req, res, next) => {
-    req.session.destroy((err) => {
+    req.session.destroy(async (err) => {
         if (err) {
             return res.redirect('/');
         }
 
+        // Удаляем все Cookies пользователя и редиректим на страницу логина
         res.clearCookie(config.get('session:name'));
         res.clearCookie(config.get('token:tokenName'));
         res.clearCookie(config.get('token:secretName'));

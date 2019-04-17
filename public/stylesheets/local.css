@@ -22,9 +22,17 @@ body {
     background-color: #a0b4c9;
 }
 
+.db-hacked {
+    background-color: #d55145;
+}
+
 .bg-auth-panel {
     background-color: #eceef1;
     padding: 0px 15px;
+}
+
+.text-white {
+    color: #ffffff;
 }
 
 .places-errors, .places-success, .ajax-loader {
