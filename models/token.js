@@ -10,21 +10,28 @@ const Schema = mongoose.Schema;
 // Поле id не указываем, так как все коллекции MongoDB
 // по умолчанию имеют поле id
 const tokenSchema = new Schema({
+    // Случайня строка в которой мы будет сохранять token пользователя
+    // если он нажал галочку Remember Me на странице авторизации, обязательно
+    // индекцируем, так как по этому полю будет делать поиск
     token: {
         type: String,
         required: true,
         index: true
     },
+    // Случайная строка по которой мы будем определять что взломан аккаунт пользователя через Cookies
     secret: {
         type: String,
         required: true
     },
+    // Идентификатор пользователя в коллекции User
+    // Индексируем, так как по этому полю будем делать поиск
     userId: {
         type: Schema.Types.ObjectId,
         required: true,
         index: true
     }
 }, {
+    // Временные метки
     timestamps: true,
 });
 

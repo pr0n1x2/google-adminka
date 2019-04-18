@@ -36,8 +36,31 @@ const userSchema = new Schema({
     timestamps: true,
 });
 
-// Создаем виртуальное свойство, которого на самом деле не существует в реальной
-// коллекции, но мы можем к нему обратиться и получить значение на основе
+// Создаем ПРИВАТНЫЙ метод, который форматирует дату в определенный формат
+// Первым аргументом принимаем дату, вторым агрументом указываем, что
+// нужно или нет выводить время
+const getFormatedDate = (date, isShowTime = false) => {
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
+    let formatedDate = `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+
+    if (isShowTime) {
+        let hours = date.getHours();
+        let minutes = date.getMinutes();
+
+        hours = hours < 10 ? `0${hours}` : hours;
+        minutes = minutes < 10 ? `0${minutes}` : minutes;
+
+        formatedDate = `${formatedDate} at ${hours}:${minutes}`;
+    }
+
+    return formatedDate;
+};
+
+// Создаем виртуальное свойство, которого на самом деле не существует в реальном
+// документе User, но мы можем к нему обратиться и получить значение на основе
 // вычислений, которые мы укажем в этом свойстве
 // Источник: https://mongoosejs.com/docs/guide.html#virtuals
 userSchema.virtual('fullName').get(function () {
@@ -63,34 +86,11 @@ userSchema.virtual('age').get(function () {
     return null;
 });
 
-// Создаем метод, который форматирует дату в определенный формат
-// Первым аргументом принимаем дату, вторым агрументом указываем, что
-// нужно или нет выводить время
-// Источник: https://mongoosejs.com/docs/guide.html#methods
-userSchema.methods.getFormatedDate = function(date, isShowTime = false) {
-    const monthNames = ["January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
-
-    let formatedDate = `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
-
-    if (isShowTime) {
-        let hours = date.getHours();
-        let minutes = date.getMinutes();
-
-        hours = hours < 10 ? `0${hours}` : hours;
-        minutes = minutes < 10 ? `0${minutes}` : minutes;
-
-        formatedDate = `${formatedDate} at ${hours}:${minutes}`;
-    }
-
-    return formatedDate;
-};
-
 // Создаем метод, который возвращает дату рождения в отпреденном формате
+// Источник: https://mongoosejs.com/docs/guide.html#methods
 userSchema.methods.getBirthday = function() {
     if (this.person.birthday) {
-        return this.getFormatedDate(this.person.birthday);
+        return getFormatedDate(this.person.birthday);
     }
 
     return null;
@@ -99,7 +99,7 @@ userSchema.methods.getBirthday = function() {
 // Создаем метод, который возвращает дату, когда пользователь зарегистрировался
 // в отпреденном формате
 userSchema.methods.getRegisteredDate = function() {
-    return this.getFormatedDate(this.createdAt, true);
+    return getFormatedDate(this.createdAt, true);
 };
 
 // Создаем метод, который возвращает дату рождения в формате, который можно редактировать

@@ -1,5 +1,3 @@
-const createError = require('http-errors');
-
 // Подключаем модель Country
 const Country = require('models/country');
 
@@ -8,6 +6,9 @@ const User = require('models/user');
 
 // Подключаем модель Token
 const Token = require('models/token');
+
+// Подключаем модуль http-errors
+const createError = require('http-errors');
 
 // Подключаем модуль ajv
 const Ajv = require('ajv');
@@ -148,7 +149,7 @@ const loginView = async (req, res, next) => {
 // Эта асинхронная middleware функция будет вызываться, когда
 // пользователь запросил страницу /login методом POST
 const loginAction = async (req, res, next) => {
-    // Получаем данные их формы, которые храняться в объекте req свойстве body
+    // Получаем данные их формы, которые хранятся в объекте req свойстве body
     const { email, password, remember } = req.body;
 
     // Формируем объекты, которые будем сравнивать с JSON Схемами
@@ -199,23 +200,33 @@ const loginAction = async (req, res, next) => {
         // Если же пароли совпадают, тогда создаем сессию
         req.session.userId = user.id;
 
+        // Сохраняем в БД sessionID, который присвоился данному сеансу
         user.lastSessionId = req.sessionID;
         await user.save();
 
         // Проверяем, если пользователь нажал галочку Remember Me
         if (remember !== undefined) {
+            // Вызываем функцию, которая генерирует новый Token документ и сохраняет его
+            // в БД, так же функция создает два Cookies, token и secret
+            // В функцию передаем объект Response и идентификатор пользователя
             await generateNewToken(res, user.id);
         }
 
-        // Перенаправляем на главную страницу /home
+        // Перенаправляем пользователя на главную страницу /home
         res.redirect('/home');
     } catch (error) {
         res.render('login', { title: 'Register page', data: loginObj, error: error.message });
     }
 };
 
+// Эта асинхронная middleware функция будет вызываться всякий
+// раз, когда нам нужно создать новый token и secret для пользователя,
+// который поставил галочки Remember Me на странице авторизации
 const generateNewToken = async (res, userId, oldToken = false) => {
+    // Создаем (замыкаем) переменную token
     let token;
+
+    // Генерируем новый secret
     const secret = await bcrypt.hash((new Date()).toString(), 10);
 
     // Получаем из конфига настройки для token
@@ -224,20 +235,29 @@ const generateNewToken = async (res, userId, oldToken = false) => {
     const tokenCookieAge = config.get('token:lifetime');
     const tokenCookieSecure = config.get('token:in_prod');
 
+    // Проверяем значение в переменной oldToken, если она пустая
+    // тогда нам нужно создать новый документ в коллекции Token
     if (!oldToken) {
+        // Генерируем новый token
         token = await bcrypt.hash((new Date()).toString(), 10);
 
+        // Создаем новый домумент
         const newToken = new Token({
-            token: token,
-            secret: secret,
-            userId: userId
+            token: token,       // значение token
+            secret: secret,     // значение secret
+            userId: userId      // идентификатор пользователя, который авторизируется на сайте
         });
 
+        // Сохраняем документ в коллекцию Token
         await newToken.save();
     } else {
+        // Если мы передали предыдущий Token в переменную oldToken,
+        // тогда нам нужно изменить secret в поле secret и сохранить в БД
         oldToken.secret = secret;
         await oldToken.save();
 
+        // Берем значение token из документа Token, которой передали в функцию
+        // и присваиваем переменной token
         token = oldToken.token;
     }
 
@@ -265,41 +285,70 @@ const checkTokenInUserCookies = async (req, res, next) => {
     // Получаем значение secret из объекта Cookies
     const secret = req.cookies[config.get('token:secretName')];
 
+    // Проверяем, что в константах token и secret есть какие-то значения,
+    // иначе нам нет смысла делать проверку на token, так как token и secret
+    // должны обязательно иметь какие-то значения.
     if (token && secret) {
         try {
+            // Получаем документ Token из БД, который соответствует константе token,
+            // значение которой мы получили из Cookies
             const tokenFromBase = await Token.findOne({token: token});
 
+            // Проверяем, что нам вернула БД, если константа tokenFromBase пустая,
+            // тогда нам ничего не нужно проверять и мы переходим к следующей
+            // middleware функции
             if (tokenFromBase) {
+                // Сравниваем значение secret, которое находится в БД со значением
+                // secret которые мы получили из Cookies
                 if (secret === tokenFromBase.secret) {
+                    // Если значения совпадают
+
+                    // Генерируем новый secret, записываем его в БД и посылаем в браузер
+                    // новый Cookies secret с новым значением и новой датой жизни
                     await generateNewToken(res, null, tokenFromBase);
+
+                    // Записываем в Sessions значение userId, котрое мы получили из БД
                     req.session.userId = tokenFromBase.userId;
+
+                    // Обновляем значение lastSessionId в коллекции user, того пользователя,
+                    // которого получили из коллекции Token
                     await User.updateOne({_id: tokenFromBase.userId}, {lastSessionId: req.sessionID});
                 } else {
+                    // Если значения НЕ совпадают
+
+                    // Получаем пользователя из БД по Id, который мы получили из коллекции Token
                     const user = await User.findById(tokenFromBase.userId);
 
+                    // Уничтожаем сессию, которая была присвоена пользователю, когда он залогинился
+                    // на сайте последний раз. Идентификатор сессии хранится в документе User
                     req.sessionStore.destroy(user.lastSessionId, async (err, sess) => {
+                        // Уничтожаем все Token в БД, которые были присвоены данному пользователю
                         await Token.deleteMany({userId: user.id});
+
+                        // Устанавливаем значение isCookiesHacked в значение true и сохраняем его в БД
                         user.isCookiesHacked = true;
                         await user.save();
 
-                        // res.render('hacked', { title: 'Your account has been hacked' });
-                        return next(showHackedMessage);
+                        // Показываем пользователю страницу, что его аккаунт был взломан
+                        res.render('hacked', { title: 'Your account has been hacked' });
+
+                        // Так как мы находимся в callback функции, нам нужно принудительно
+                        // завершить запрос, чтобы следующий код после этой строчки не исполнялся
+                        res.end();
                     });
 
                     return;
                 }
             }
         } catch (error) {
+            // Если в блоке try произошла какае-то ошибка, тогда пользователю показываем
+            // сообщение 500, что значит, что произошла внутренняя ошибка на сервере
             return next(createError(500));
         }
     }
 
     next();
 };
-
-const showHackedMessage = (req, res, next) => {
-    res.render('hacked', { title: 'Your account has been hacked' });
-}
 
 // Эта middleware функция будет вызываться всякий
 // раз, когда нам нужно проверить на какою страницу перешел
@@ -337,13 +386,6 @@ const allowUserToPage = (req, res, next) => {
 // раз, когда нам нужно получить документ User текущего пользователя
 // из БД и сохранить его в res.locals
 const getUserFromDatabaseBySessionUserId =  async (req, res, next) => {
-    // Првоеряем, что в res.locals у нас есть уже пользователь
-    // Если он существует, тогда переходим к следующей middleware функции
-    // Ранее это значение мы могли установить в checkTokenInUserCookies
-    if (res.locals.user) {
-        return next();
-    }
-
     // Берем значение userId из сессии
     const {userId} = req.session;
 
