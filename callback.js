@@ -1,11 +1,13 @@
-const checkTokenInUserCookies = async (req, res, next) => {
+const checkTokenInUserCookies = (req, res, next) => {
     const userId = 10;
 
-    req.sessionStore.destroy(userId, async (err, sess) => {
-        await Token.deleteMany({userId: userId});
+    if (req.session.userId) {
+        req.sessionStore.destroy(userId, async (err, sess) => {
+            await Token.deleteMany({userId: userId});
 
-        return res.render('login', { title: 'Login page' });
-    });
+            return res.render('login', {title: 'Login page'});
+        });
+    }
 
     next();
 };
